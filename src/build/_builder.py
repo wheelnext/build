@@ -14,6 +14,8 @@ from collections.abc import Iterator
 from typing import Any, Mapping, Sequence, TypeVar
 
 import pyproject_hooks
+from variantlib.envspec import evaluate_variant_requirements
+from variantlib.models.variant import VariantProperty
 
 from . import _ctx, env
 from ._compat import tomllib
@@ -225,6 +227,25 @@ class ProjectBuilder:
         with self._handle_backend(hook_name):
             return set(get_requires(config_settings))
 
+    def filter_variants(
+        self,
+        dependencies: set[str],
+        config_settings: ConfigSettings | None = None,
+    ) -> set[str]:
+        all_variants = set()
+        for setting in ("variant", "variant-name"):
+            variants = (config_settings or {}).get(setting, [])
+            if isinstance(variants, str):
+                all_variants.add(variants)
+            else:
+                all_variants.update(variants)
+        return set(
+            evaluate_variant_requirements(
+                list(dependencies),
+                [VariantProperty.from_str(x) for x in all_variants]
+            )
+        )
+
     def check_dependencies(
         self,
         distribution: Distribution,
@@ -239,7 +260,10 @@ class ProjectBuilder:
         :param config_settings: Config settings for the build backend
         :returns: Set of variable-length unmet dependency tuples
         """
-        dependencies = self.get_requires_for_build(distribution, config_settings).union(self.build_system_requires)
+        dependencies = self.filter_variants(
+            self.get_requires_for_build(distribution, config_settings).union(self.build_system_requires),
+            config_settings
+        )
         return {u for d in dependencies for u in check_dependency(d)}
 
     def prepare(
