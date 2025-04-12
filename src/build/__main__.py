@@ -37,7 +37,7 @@ _COLORS = {
     'underline': '\33[4m',
     'reset': '\33[0m',
 }
-_NO_COLORS = {color: '' for color in _COLORS}
+_NO_COLORS = dict.fromkeys(_COLORS, '')
 
 
 _styles = contextvars.ContextVar('_styles', default=_COLORS)
@@ -323,7 +323,7 @@ def main_parser() -> argparse.ArgumentParser:
         '--version',
         '-V',
         action='version',
-        version=f"build {build.__version__} ({','.join(build.__path__)})",
+        version=f'build {build.__version__} ({",".join(build.__path__)})',
     )
     parser.add_argument(
         '--verbose',
