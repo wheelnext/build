@@ -132,9 +132,12 @@ def _build_in_isolated_env(
     with DefaultIsolatedEnv(installer=installer) as env:
         builder = ProjectBuilder.from_isolated_env(env, srcdir)
         # first install the build dependencies
-        env.install(builder.build_system_requires)
+        env.install(builder.filter_variants(builder.build_system_requires, config_settings or {}))
         # then get the extra required dependencies from the backend (which was installed in the call above :P)
-        env.install(builder.get_requires_for_build(distribution, config_settings or {}))
+        env.install(builder.filter_variants(
+            builder.get_requires_for_build(distribution, config_settings or {}),
+            config_settings or {}
+        ))
         return builder.build(distribution, outdir, config_settings or {})
 
 
